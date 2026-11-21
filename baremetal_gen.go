@@ -132,6 +132,13 @@ func (s *BaremetalService) GetPlanOptions(ctx context.Context, catalog string, p
 	return s.do(ctx, "GET", "/baremetal/v1/plans/"+pathSegment(catalog)+"/"+pathSegment(plan)+"/options", params.values(), nil, false, opts)
 }
 
+// ListProviderIPServers calls GET /provider-ips/servers.
+//
+// Your servers an additional IP (bought in the IP product) can go to, with each datacenter's registry, and why not
+func (s *BaremetalService) ListProviderIPServers(ctx context.Context, opts ...RequestOption) (*Response, error) {
+	return s.do(ctx, "GET", "/baremetal/v1/provider-ips/servers", nil, nil, false, opts)
+}
+
 // Quote calls POST /quote.
 //
 // Price a configuration (nothing held)
