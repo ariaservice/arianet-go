@@ -180,7 +180,7 @@ func (s *RegionalVPSService) ReinstallServer(ctx context.Context, id int64, body
 
 // ResetServerPassword calls POST /servers/{id}/reset-password.
 //
-// Set the root password. Without one it is generated and returned once in this answer
+// Set the root password. Without one it is generated and returned once in this answer. An image of kind routeros or other has none (422 unsupported_image: use the console)
 func (s *RegionalVPSService) ResetServerPassword(ctx context.Context, id int64, body any, opts ...RequestOption) (*Response, error) {
 	return s.do(ctx, "POST", "/vps/v1/servers/"+pathSegment(id)+"/reset-password", nil, body, false, opts)
 }
