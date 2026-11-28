@@ -48,6 +48,13 @@ func (s *RegionalVPSService) GetAction(ctx context.Context, id int64, opts ...Re
 	return s.do(ctx, "GET", "/vps/v1/actions/"+pathSegment(id), nil, nil, false, opts)
 }
 
+// ListAccountBackups calls GET /backups.
+//
+// Every visible backup and snapshot of your servers, deleted servers' retained ones included
+func (s *RegionalVPSService) ListAccountBackups(ctx context.Context, opts ...RequestOption) (*Response, error) {
+	return s.do(ctx, "GET", "/vps/v1/backups", nil, nil, false, opts)
+}
+
 // ListDatacenters calls GET /datacenters.
 //
 // Datacenters of this region, with what their hosts can do
@@ -164,6 +171,48 @@ func (s *RegionalVPSService) ServerOperation(ctx context.Context, id int64, op s
 	return s.do(ctx, "POST", "/vps/v1/servers/"+pathSegment(id)+"/actions/"+pathSegment(op), nil, nil, false, opts)
 }
 
+// GetServerBackups calls GET /servers/{id}/backups.
+//
+// The server's backups and snapshots, the add-on's state and prices
+func (s *RegionalVPSService) GetServerBackups(ctx context.Context, id int64, opts ...RequestOption) (*Response, error) {
+	return s.do(ctx, "GET", "/vps/v1/servers/"+pathSegment(id)+"/backups", nil, nil, false, opts)
+}
+
+// CreateServerBackup calls POST /servers/{id}/backups.
+//
+// Take a manual backup now. It uses one of the 7 slots shared with the nightly backups
+func (s *RegionalVPSService) CreateServerBackup(ctx context.Context, id int64, body any, opts ...RequestOption) (*Response, error) {
+	return s.do(ctx, "POST", "/vps/v1/servers/"+pathSegment(id)+"/backups", nil, body, false, opts)
+}
+
+// DisableServerBackups calls POST /servers/{id}/backups/disable.
+//
+// Turn the backup add-on off: billing stops now and the backups are deleted after 48 hours. Snapshots stay
+func (s *RegionalVPSService) DisableServerBackups(ctx context.Context, id int64, opts ...RequestOption) (*Response, error) {
+	return s.do(ctx, "POST", "/vps/v1/servers/"+pathSegment(id)+"/backups/disable", nil, nil, false, opts)
+}
+
+// EnableServerBackups calls POST /servers/{id}/backups/enable.
+//
+// Turn the backup add-on on: a nightly backup, 7 slots, billed as a percent of the plan
+func (s *RegionalVPSService) EnableServerBackups(ctx context.Context, id int64, opts ...RequestOption) (*Response, error) {
+	return s.do(ctx, "POST", "/vps/v1/servers/"+pathSegment(id)+"/backups/enable", nil, nil, false, opts)
+}
+
+// DeleteServerBackup calls DELETE /servers/{id}/backups/{backup}.
+//
+// Delete a backup or snapshot, also of a deleted server
+func (s *RegionalVPSService) DeleteServerBackup(ctx context.Context, id int64, backup string, opts ...RequestOption) (*Response, error) {
+	return s.do(ctx, "DELETE", "/vps/v1/servers/"+pathSegment(id)+"/backups/"+pathSegment(backup), nil, nil, false, opts)
+}
+
+// RestoreServerBackup calls POST /servers/{id}/backups/{backup}/restore.
+//
+// Restore a backup or snapshot onto the server: its disks are replaced and it restarts; everything after the backup is lost
+func (s *RegionalVPSService) RestoreServerBackup(ctx context.Context, id int64, backup string, opts ...RequestOption) (*Response, error) {
+	return s.do(ctx, "POST", "/vps/v1/servers/"+pathSegment(id)+"/backups/"+pathSegment(backup)+"/restore", nil, nil, false, opts)
+}
+
 // GetConsole calls POST /servers/{id}/console.
 //
 // A one-time browser console URL (VNC). Open it at once: it expires in expires_in seconds and works once; never store it
@@ -180,7 +229,7 @@ func (s *RegionalVPSService) ReinstallServer(ctx context.Context, id int64, body
 
 // ResetServerPassword calls POST /servers/{id}/reset-password.
 //
-// Set the root password. Without one it is generated and returned once in this answer
+// Set the root password. Without one it is generated and returned once in this answer. An image of kind routeros or other has none (422 unsupported_image: use the console)
 func (s *RegionalVPSService) ResetServerPassword(ctx context.Context, id int64, body any, opts ...RequestOption) (*Response, error) {
 	return s.do(ctx, "POST", "/vps/v1/servers/"+pathSegment(id)+"/reset-password", nil, body, false, opts)
 }
@@ -190,6 +239,13 @@ func (s *RegionalVPSService) ResetServerPassword(ctx context.Context, id int64, 
 // Move to another plan of the server's host. Disks only grow. The new plan is billed from the moment the host finished
 func (s *RegionalVPSService) ResizeServer(ctx context.Context, id int64, body any, opts ...RequestOption) (*Response, error) {
 	return s.do(ctx, "POST", "/vps/v1/servers/"+pathSegment(id)+"/resize", nil, body, false, opts)
+}
+
+// CreateServerSnapshot calls POST /servers/{id}/snapshots.
+//
+// Take a snapshot, kept until deleted and billed per GB
+func (s *RegionalVPSService) CreateServerSnapshot(ctx context.Context, id int64, body any, opts ...RequestOption) (*Response, error) {
+	return s.do(ctx, "POST", "/vps/v1/servers/"+pathSegment(id)+"/snapshots", nil, body, false, opts)
 }
 
 // RegionalVPSGetTrafficParams holds the query parameters of RegionalVPSService.GetTraffic.

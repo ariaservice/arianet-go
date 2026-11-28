@@ -18,6 +18,20 @@ func (s *SMSService) WithRegion(region string) *SMSService {
 	return &SMSService{s.withRegion(region)}
 }
 
+// GetApplication calls GET /application.
+//
+// The activation request and whether one is needed
+func (s *SMSService) GetApplication(ctx context.Context, opts ...RequestOption) (*Response, error) {
+	return s.do(ctx, "GET", "/sms/v1/application", nil, nil, false, opts)
+}
+
+// CreateApplication calls POST /application.
+//
+// Submit the activation request (reviewed before the account can send)
+func (s *SMSService) CreateApplication(ctx context.Context, body any, opts ...RequestOption) (*Response, error) {
+	return s.do(ctx, "POST", "/sms/v1/application", nil, body, false, opts)
+}
+
 // SMSListBatchesParams holds the query parameters of SMSService.ListBatches.
 type SMSListBatchesParams struct {
 	Page    *int64
@@ -203,7 +217,7 @@ func (s *SMSService) ListMessages(ctx context.Context, params *SMSListMessagesPa
 
 // SendMessage calls POST /messages.
 //
-// Send a message to one or more recipients (or schedule it)
+// Send an approved template to up to 100 recipients (only for accounts staff opened for direct sending; otherwise 403 direct_send_disabled - use /verify/lookup)
 func (s *SMSService) SendMessage(ctx context.Context, body any, opts ...RequestOption) (*Response, error) {
 	return s.do(ctx, "POST", "/sms/v1/messages", nil, body, false, opts)
 }
@@ -336,6 +350,13 @@ func (s *SMSService) UpdateTemplate(ctx context.Context, template string, body a
 // Delete a template
 func (s *SMSService) DeleteTemplate(ctx context.Context, template string, opts ...RequestOption) (*Response, error) {
 	return s.do(ctx, "DELETE", "/sms/v1/templates/"+pathSegment(template), nil, nil, false, opts)
+}
+
+// CreateVerifyLookup calls POST /verify/lookup.
+//
+// Send an approved template to one recipient (verification codes, notices)
+func (s *SMSService) CreateVerifyLookup(ctx context.Context, body any, opts ...RequestOption) (*Response, error) {
+	return s.do(ctx, "POST", "/sms/v1/verify/lookup", nil, body, false, opts)
 }
 
 // GetWebhook calls GET /webhook.

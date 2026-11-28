@@ -109,6 +109,58 @@ func (s *HostingService) ListAlerts(ctx context.Context, id int64, params *Hosti
 	return s.do(ctx, "GET", "/hosting/v1/accounts/"+pathSegment(id)+"/alerts", params.values(), nil, false, opts)
 }
 
+// HostingGetBackupsParams holds the query parameters of HostingService.GetBackups.
+type HostingGetBackupsParams struct {
+	// Read the server again instead of the last answer (kept 30 s).
+	Refresh *string
+}
+
+func (p *HostingGetBackupsParams) values() url.Values {
+	v := url.Values{}
+	if p == nil {
+		return v
+	}
+	if p.Refresh != nil {
+		v.Set("refresh", queryValue(*p.Refresh))
+	}
+	return v
+}
+
+// GetBackups calls GET /accounts/{id}/backups.
+//
+// The account's backups: whether its server keeps them, the add-on, its price, the restore points and downloads
+func (s *HostingService) GetBackups(ctx context.Context, id int64, params *HostingGetBackupsParams, opts ...RequestOption) (*Response, error) {
+	return s.do(ctx, "GET", "/hosting/v1/accounts/"+pathSegment(id)+"/backups", params.values(), nil, false, opts)
+}
+
+// TakeBackup calls POST /accounts/{id}/backups.
+//
+// Take a backup now, kept as one of the account's own (the oldest of 3 rotates out)
+func (s *HostingService) TakeBackup(ctx context.Context, id int64, opts ...RequestOption) (*Response, error) {
+	return s.do(ctx, "POST", "/hosting/v1/accounts/"+pathSegment(id)+"/backups", nil, nil, false, opts)
+}
+
+// SetBackups calls PUT /accounts/{id}/backups.
+//
+// Turn the backup add-on on or off. On is charged for the rest of the term (nothing when this term is already paid for it) and renews with the account; off refunds nothing and hides the restore points at once
+func (s *HostingService) SetBackups(ctx context.Context, id int64, body any, opts ...RequestOption) (*Response, error) {
+	return s.do(ctx, "PUT", "/hosting/v1/accounts/"+pathSegment(id)+"/backups", nil, body, false, opts)
+}
+
+// DownloadBackup calls POST /accounts/{id}/backups/{point}/download.
+//
+// Build a downloadable archive (a cPanel backup) of a restore point in the account's home; once the action succeeds it is in downloads (its result names the file), fetched with the File Manager login link, and deleted after 48 hours
+func (s *HostingService) DownloadBackup(ctx context.Context, id int64, point string, opts ...RequestOption) (*Response, error) {
+	return s.do(ctx, "POST", "/hosting/v1/accounts/"+pathSegment(id)+"/backups/"+pathSegment(point)+"/download", nil, nil, false, opts)
+}
+
+// RestoreBackup calls POST /accounts/{id}/backups/{point}/restore.
+//
+// Restore a restore point over the account: everything (full), only the files and mail (files) or only the databases. The current data is overwritten; the plan and main domain stay as they are
+func (s *HostingService) RestoreBackup(ctx context.Context, id int64, point string, body any, opts ...RequestOption) (*Response, error) {
+	return s.do(ctx, "POST", "/hosting/v1/accounts/"+pathSegment(id)+"/backups/"+pathSegment(point)+"/restore", nil, body, false, opts)
+}
+
 // HostingGetCloudLinuxParams holds the query parameters of HostingService.GetCloudLinux.
 type HostingGetCloudLinuxParams struct {
 	// Read the server again instead of answering from the snapshot (waits up to 30 s).
@@ -250,6 +302,34 @@ func (s *HostingService) UpdateMailbox(ctx context.Context, id int64, localPart 
 // Delete a mailbox
 func (s *HostingService) DeleteMailbox(ctx context.Context, id int64, localPart string, opts ...RequestOption) (*Response, error) {
 	return s.do(ctx, "DELETE", "/hosting/v1/accounts/"+pathSegment(id)+"/email-accounts/"+pathSegment(localPart), nil, nil, false, opts)
+}
+
+// GetFirewall calls GET /accounts/{id}/firewall.
+//
+// IPs the server blocked for the account's sites, why, and its allowlist
+func (s *HostingService) GetFirewall(ctx context.Context, id int64, opts ...RequestOption) (*Response, error) {
+	return s.do(ctx, "GET", "/hosting/v1/accounts/"+pathSegment(id)+"/firewall", nil, nil, false, opts)
+}
+
+// AllowIP calls POST /accounts/{id}/firewall/allowed.
+//
+// Allow an IP: never blocked for the account's sites
+func (s *HostingService) AllowIP(ctx context.Context, id int64, body any, opts ...RequestOption) (*Response, error) {
+	return s.do(ctx, "POST", "/hosting/v1/accounts/"+pathSegment(id)+"/firewall/allowed", nil, body, false, opts)
+}
+
+// DisallowIP calls DELETE /accounts/{id}/firewall/allowed/{ip}.
+//
+// Take an IP off the account's allowlist
+func (s *HostingService) DisallowIP(ctx context.Context, id int64, ip string, opts ...RequestOption) (*Response, error) {
+	return s.do(ctx, "DELETE", "/hosting/v1/accounts/"+pathSegment(id)+"/firewall/allowed/"+pathSegment(ip), nil, nil, false, opts)
+}
+
+// UnblockIP calls POST /accounts/{id}/firewall/unblock.
+//
+// Lift a block of an IP raised for the account's sites
+func (s *HostingService) UnblockIP(ctx context.Context, id int64, body any, opts ...RequestOption) (*Response, error) {
+	return s.do(ctx, "POST", "/hosting/v1/accounts/"+pathSegment(id)+"/firewall/unblock", nil, body, false, opts)
 }
 
 // Login calls POST /accounts/{id}/login.
@@ -414,6 +494,51 @@ func (s *HostingService) ResellerTerminateAccount(ctx context.Context, id int64,
 	return s.do(ctx, "DELETE", "/hosting/v1/accounts/"+pathSegment(id)+"/reseller/accounts/"+pathSegment(username), nil, body, false, opts)
 }
 
+// HostingGetResellerAccountBackupsParams holds the query parameters of HostingService.GetResellerAccountBackups.
+type HostingGetResellerAccountBackupsParams struct {
+	// Read the server again instead of the last answer (kept 30 s).
+	Refresh *string
+}
+
+func (p *HostingGetResellerAccountBackupsParams) values() url.Values {
+	v := url.Values{}
+	if p == nil {
+		return v
+	}
+	if p.Refresh != nil {
+		v.Set("refresh", queryValue(*p.Refresh))
+	}
+	return v
+}
+
+// GetResellerAccountBackups calls GET /accounts/{id}/reseller/accounts/{username}/backups.
+//
+// One of the reseller's customer accounts' backups, in the shape of an account's: its restore points (only those taken while the reseller owned it), manual backups, the running action and downloads. price and due_now are null (the add-on is the reseller account's). Also needs hosting:view
+func (s *HostingService) GetResellerAccountBackups(ctx context.Context, id int64, username string, params *HostingGetResellerAccountBackupsParams, opts ...RequestOption) (*Response, error) {
+	return s.do(ctx, "GET", "/hosting/v1/accounts/"+pathSegment(id)+"/reseller/accounts/"+pathSegment(username)+"/backups", params.values(), nil, false, opts)
+}
+
+// ResellerTakeAccountBackup calls POST /accounts/{id}/reseller/accounts/{username}/backups.
+//
+// Take a backup of one of the reseller's customer accounts now, kept as one of its own (the oldest of 3 rotates out). Also needs hosting:view and hosting:manage
+func (s *HostingService) ResellerTakeAccountBackup(ctx context.Context, id int64, username string, opts ...RequestOption) (*Response, error) {
+	return s.do(ctx, "POST", "/hosting/v1/accounts/"+pathSegment(id)+"/reseller/accounts/"+pathSegment(username)+"/backups", nil, nil, false, opts)
+}
+
+// ResellerDownloadAccountBackup calls POST /accounts/{id}/reseller/accounts/{username}/backups/{point}/download.
+//
+// Build a downloadable archive of a restore point in the customer account's home; fetch it with the customer account's File Manager login (POST .../login), deleted after 48 hours. Also needs hosting:view and hosting:manage
+func (s *HostingService) ResellerDownloadAccountBackup(ctx context.Context, id int64, username string, point string, opts ...RequestOption) (*Response, error) {
+	return s.do(ctx, "POST", "/hosting/v1/accounts/"+pathSegment(id)+"/reseller/accounts/"+pathSegment(username)+"/backups/"+pathSegment(point)+"/download", nil, nil, false, opts)
+}
+
+// ResellerRestoreAccountBackup calls POST /accounts/{id}/reseller/accounts/{username}/backups/{point}/restore.
+//
+// Restore one of the reseller's customer accounts from a restore point: everything (full), only the files and mail (files) or only the databases; its package and main domain stay. Also needs hosting:view and hosting:manage
+func (s *HostingService) ResellerRestoreAccountBackup(ctx context.Context, id int64, username string, point string, body any, opts ...RequestOption) (*Response, error) {
+	return s.do(ctx, "POST", "/hosting/v1/accounts/"+pathSegment(id)+"/reseller/accounts/"+pathSegment(username)+"/backups/"+pathSegment(point)+"/restore", nil, body, false, opts)
+}
+
 // ResellerChangeDomain calls POST /accounts/{id}/reseller/accounts/{username}/domain.
 //
 // Change the main domain of one of the reseller's customer accounts, at once. Its first change is free, each later one is charged to the reseller's account. Also needs hosting:view
@@ -468,6 +593,20 @@ func (s *HostingService) ResellerUnsuspend(ctx context.Context, id int64, userna
 // The hosting packages a reseller defined on its control panel for its customers, by name, with how many of its accounts run each. Also needs hosting:view
 func (s *HostingService) ListResellerPackages(ctx context.Context, id int64, opts ...RequestOption) (*Response, error) {
 	return s.do(ctx, "GET", "/hosting/v1/accounts/"+pathSegment(id)+"/reseller/packages", nil, nil, false, opts)
+}
+
+// ListResellerRetained calls GET /accounts/{id}/reseller/retained.
+//
+// The reseller's customer accounts deleted from its server whose backups are still held (30 days after their last backup): they can be created again. Also needs hosting:view
+func (s *HostingService) ListResellerRetained(ctx context.Context, id int64, opts ...RequestOption) (*Response, error) {
+	return s.do(ctx, "GET", "/hosting/v1/accounts/"+pathSegment(id)+"/reseller/retained", nil, nil, false, opts)
+}
+
+// ResellerRestoreRetained calls POST /accounts/{id}/reseller/retained/{username}/restore.
+//
+// Create a deleted customer account again from its latest backup, under its old username and domain, owned by the reseller. No charge; it counts against the reseller's account limit. Also needs hosting:view and hosting:manage
+func (s *HostingService) ResellerRestoreRetained(ctx context.Context, id int64, username string, opts ...RequestOption) (*Response, error) {
+	return s.do(ctx, "POST", "/hosting/v1/accounts/"+pathSegment(id)+"/reseller/retained/"+pathSegment(username)+"/restore", nil, nil, false, opts)
 }
 
 // GetResellerUsage calls GET /accounts/{id}/reseller/usage.
@@ -675,4 +814,21 @@ func (p *HostingListPlansParams) values() url.Values {
 // Plans for sale
 func (s *HostingService) ListPlans(ctx context.Context, params *HostingListPlansParams, opts ...RequestOption) (*Response, error) {
 	return s.do(ctx, "GET", "/hosting/v1/plans", params.values(), nil, false, opts)
+}
+
+// ListRetained calls GET /retained.
+//
+// Your terminated accounts whose backup is still held (about 30 days after the termination): they can be claimed back
+func (s *HostingService) ListRetained(ctx context.Context, opts ...RequestOption) (*Response, error) {
+	return s.do(ctx, "GET", "/hosting/v1/retained", nil, nil, false, opts)
+}
+
+// ClaimRetained calls POST /retained/{id}/claim.
+//
+// Claim a terminated account back: an order of a new term (the order's price, the restore itself is free) on the same server, created from its latest backup under its old domain. Answered like an order: follow the action. Its domain or username held again fails it and releases the payment hold
+//
+// The request carries an Idempotency-Key (generated when none is given with
+// WithIdempotencyKey), so it is retried safely after a network error or a 5xx.
+func (s *HostingService) ClaimRetained(ctx context.Context, id int64, body any, opts ...RequestOption) (*Response, error) {
+	return s.do(ctx, "POST", "/hosting/v1/retained/"+pathSegment(id)+"/claim", nil, body, true, opts)
 }
